@@ -5,6 +5,8 @@ import (
 	"log"
 	"net/http"
 	"regexp"
+
+	"github.com/nmalensek/simple-form-server/users"
 )
 
 var userFilePath = flag.String("ufile", "", "The absolute path for the file to use as a pseudo-database")
@@ -23,7 +25,7 @@ func makeHandler(fn func(w http.ResponseWriter, r *http.Request)) http.HandlerFu
 }
 
 func userHandler(w http.ResponseWriter, r *http.Request) {
-
+	users.ProcessRequestByType(w, r)
 }
 
 func main() {
