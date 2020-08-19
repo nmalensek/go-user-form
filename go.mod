@@ -1,3 +1,3 @@
-module github.com/nmalensek/simple-form-server
+module github.com/nmalensek/go-user-form
 
 go 1.14

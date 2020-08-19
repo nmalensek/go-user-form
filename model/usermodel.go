@@ -1,8 +1,8 @@
 package model
 
-//IUserCrud defines basic CRUD methods for the User type.
-type IUserCrud interface {
-	Get() []string
+//UserDataStore defines the User type data operations.
+type UserDataStore interface {
+	GetAll() ([]string, error)
 	Create(User) bool
 	Edit(User) bool
 	Delete(int) bool
@@ -16,19 +16,19 @@ type User struct {
 	Organization string
 }
 
-//FileUserModel is an implementation of IUserCrud using the filesystem as a pseudo-database.
+//FileUserModel is an implementation of UserDataStore using the filesystem as a pseudo-database.
 type FileUserModel struct {
-	Filepath string
+	Filepath *string
 }
 
-//Get retrieves all saved users.
-func (m FileUserModel) Get() ([]string, error) {
+//GetAll retrieves all saved users.
+func (m FileUserModel) GetAll() ([]string, error) {
 	//content, err := ioutil.ReadFile(m.Filepath)
 	// if err != nil {
 	// 	log.Fatal(err)
 	// 	return nil, err
 	// }
-	return []string{`{"1":{"id":1,"firstName":"test2","lastName":"testLn","organization":"marketing","email":"test@email.com"}}`}, nil
+	return []string{}, nil
 }
 
 //Create creates a new user and saves it to the "database" file.
