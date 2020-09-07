@@ -15,6 +15,7 @@ type UserDataStore interface {
 
 //User is an instance of an employee in a company.
 type User struct {
+	ID           int
 	FirstName    string
 	LastName     string
 	Email        string
