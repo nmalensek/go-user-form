@@ -7,7 +7,7 @@ import (
 
 //UserDataStore defines the User type data operations.
 type UserDataStore interface {
-	GetAll() ([]*User, error)
+	GetAll() ([]User, error)
 	Create(User) error
 	Edit(User) error
 	Delete(int) error
@@ -31,13 +31,13 @@ type FileUserModel struct {
 }
 
 //GetAll retrieves all saved users.
-func (m *FileUserModel) GetAll() ([]*User, error) {
+func (m *FileUserModel) GetAll() ([]User, error) {
 	//content, err := ioutil.ReadFile(m.Filepath)
 	// if err != nil {
 	// 	log.Fatal(err)
 	// 	return nil, err
 	// }
-	return []*User{}, nil
+	return []User{}, nil
 }
 
 //Create creates a new user and saves it to the "database" file.

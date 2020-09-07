@@ -4,6 +4,7 @@ import (
 	"errors"
 	"flag"
 	"fmt"
+	"regexp"
 
 	"github.com/nmalensek/go-user-form/model"
 )
@@ -11,9 +12,11 @@ import (
 var userFilePath = flag.String("ufile", "", "The absolute path for the file to use as a pseudo-database")
 var dbType = flag.String("db", "", "The type of database to use. If db=file, the ufile parameter must also be specified")
 
+var validPath = regexp.MustCompile("^/(users)/([a-zA-Z0-9]*)$")
+
 //Env contains all environment variables that the app needs to run (database info, loggers, etc.)
 type Env struct {
-	db model.UserDataStore
+	Datastore model.UserDataStore
 }
 
 //Start initializes all environment dependencies for use in the application.
@@ -22,7 +25,7 @@ func Start() (*Env, error) {
 	if err != nil {
 		return nil, fmt.Errorf("%w", err)
 	}
-	env := Env{db: db}
+	env := Env{Datastore: db}
 
 	return &env, nil
 }
