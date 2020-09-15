@@ -4,6 +4,8 @@ import (
 	"errors"
 	"flag"
 	"fmt"
+	"log"
+	"os"
 	"regexp"
 
 	"github.com/nmalensek/go-user-form/model"
@@ -17,6 +19,7 @@ var validPath = regexp.MustCompile("^/(users)/([a-zA-Z0-9]*)$")
 //Env contains all environment variables that the app needs to run (database info, loggers, etc.)
 type Env struct {
 	Datastore model.UserDataStore
+	ErrorLog  *log.Logger
 }
 
 //Start initializes all environment dependencies for use in the application.
@@ -26,6 +29,12 @@ func Start() (*Env, error) {
 		return nil, fmt.Errorf("%w", err)
 	}
 	env := Env{Datastore: db}
+
+	fileLog, err := initLogger()
+	if err != nil {
+		return nil, fmt.Errorf("%w", err)
+	}
+	env.ErrorLog = fileLog
 
 	return &env, nil
 }
@@ -40,6 +49,14 @@ func initDb() (model.UserDataStore, error) {
 	default:
 		return nil, errors.New("initDb: unable to parse specified database type")
 	}
+}
+
+func initLogger() (*log.Logger, error) {
+	file, err := os.OpenFile("logs.txt", os.O_APPEND|os.O_CREATE|os.O_WRONLY, os.ModeAppend)
+	if err != nil {
+		return nil, err
+	}
+	return log.New(file, "ERROR: ", log.Ldate|log.Ltime|log.LUTC|log.Lshortfile), nil
 }
 
 //registerFileDb determines the filepath permissions given in the userFilePath argument, and if

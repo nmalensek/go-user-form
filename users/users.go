@@ -13,6 +13,7 @@ func ProcessRequestByType(w http.ResponseWriter, r *http.Request, e *config.Env)
 	switch r.Method {
 	case "GET":
 		if u, err := processGet(r, e.Datastore); err != nil {
+			e.ErrorLog.Println(err)
 			handleError(w, err)
 		} else {
 			w.Write(u)
@@ -27,11 +28,11 @@ func processGet(r *http.Request, db model.UserDataStore) ([]byte, error) {
 		return nil, err
 	}
 
-	usersJSON, err := json.Marshal(userList)
+	userBytes, err := json.Marshal(userList)
 	if err != nil {
 		return nil, err
 	}
-	return usersJSON, nil
+	return userBytes, nil
 }
 
 //TODO: jsonify errors because the front end needs them that way.
