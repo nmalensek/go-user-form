@@ -13,8 +13,11 @@ func userHandler(w http.ResponseWriter, r *http.Request, e *config.Env) {
 }
 
 func main() {
-	env := config.Start()
+	env, err := config.Start()
+	if err != nil {
+		log.Fatal(err)
+	}
 
-	http.HandleFunc("/users/", makeHandler(userHandler, env))
+	http.HandleFunc("/users/", config.MakeHandler(userHandler, env))
 	log.Fatal(http.ListenAndServe(":8080", nil))
 }
