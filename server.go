@@ -1,6 +1,7 @@
 package main
 
 import (
+	"flag"
 	"log"
 	"net/http"
 
@@ -13,6 +14,7 @@ func userHandler(w http.ResponseWriter, r *http.Request, e *config.Env) {
 }
 
 func main() {
+	flag.Parse()
 	env, err := config.Start()
 	if err != nil {
 		log.Fatal(err)

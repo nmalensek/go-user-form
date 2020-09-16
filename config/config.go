@@ -52,7 +52,7 @@ func initDb() (model.UserDataStore, error) {
 }
 
 func initLogger() (*log.Logger, error) {
-	file, err := os.OpenFile("logs.txt", os.O_APPEND|os.O_CREATE|os.O_WRONLY, os.ModeAppend)
+	file, err := os.OpenFile("logs.txt", os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
 	if err != nil {
 		return nil, err
 	}
