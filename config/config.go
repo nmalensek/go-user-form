@@ -8,6 +8,7 @@ import (
 	"os"
 	"regexp"
 
+	"github.com/nmalensek/go-user-form/fileusermodel"
 	"github.com/nmalensek/go-user-form/model"
 )
 
@@ -66,5 +67,5 @@ func registerFileDb() (model.UserDataStore, error) {
 		return nil, errors.New("registerFileDb: using a file as a database but no file path was provided")
 	}
 	//TODO: ensure read/write permissions on file. should this be logged?
-	return &model.FileUserModel{Filepath: userFilePath}, nil
+	return &fileusermodel.FileUserModel{Filepath: *userFilePath}, nil
 }
