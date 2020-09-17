@@ -4,9 +4,10 @@ import (
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
-	"sort"
 	"strings"
 	"testing"
+
+	"github.com/nmalensek/go-user-form/fileusermodel"
 
 	"github.com/nmalensek/go-user-form/config"
 	"github.com/nmalensek/go-user-form/model"
@@ -21,18 +22,11 @@ func (mu *mockUsers) GetAll() ([]model.User, error) {
 	mockJSON := mu.dataSet()
 
 	var userMap map[int]model.User
-	json.Unmarshal([]byte(mockJSON), &userMap)
 
-	userSlice := make([]model.User, len(userMap))
-	i := 0
-	for _, val := range userMap {
-		userSlice[i] = val
-		i++
+	userSlice, err := fileusermodel.JSONToUsers([]byte(mockJSON), &userMap)
+	if err != nil {
+		return nil, err
 	}
-
-	sort.Slice(userSlice, func(i, j int) bool {
-		return userSlice[i].ID < userSlice[j].ID
-	})
 
 	return userSlice, nil
 }
@@ -59,10 +53,25 @@ func (mu *mockUsers) dataSet() string {
 	return mu.UserData
 }
 
-func (mu *mockUsers) setDataSet() {
+func (mu *mockUsers) setDataSet(newData string, append bool) {
+	if append {
+		var userMap map[int]model.User
+		json.Unmarshal([]byte(mu.dataSet()), &userMap)
+		var newUser model.User
+		json.Unmarshal([]byte(newData), &newUser)
 
+		userMap[newUser.ID] = newUser
+		updatedData, err := json.Marshal(userMap)
+		if err != nil {
+			return
+		}
+		mu.UserData = string(updatedData)
+	} else {
+		mu.UserData = newData
+	}
 }
 
+//Test getting all users; method should return all users in the datastore.
 func TestGetProcessing(t *testing.T) {
 	testStore := &mockUsers{}
 	mockEnv := config.Env{Datastore: testStore}
@@ -89,8 +98,11 @@ func TestGetProcessing(t *testing.T) {
 	}
 }
 
+//Test new user creation; new user should be added to the datastore.
 func TestPostProcessingGood(t *testing.T) {
 	testStore := &mockUsers{}
+	//make sure the test store is empty for ease of save checking.
+	testStore.setDataSet("", false)
 	mockEnv := config.Env{Datastore: testStore}
 
 	req, err := http.NewRequest(http.MethodPost, "/users/",
@@ -102,4 +114,27 @@ func TestPostProcessingGood(t *testing.T) {
 	handler := http.HandlerFunc(config.MakeHandler(ProcessRequestByType, &mockEnv))
 	rec := httptest.NewRecorder()
 	handler.ServeHTTP(rec, req)
+
+	if rec.Code != http.StatusOK {
+		t.Errorf("handler returned wrong status code: got %v want %v",
+			rec.Code, http.StatusOK)
+	}
+
+	updatedData := testStore.dataSet()
+
+	var userMap map[int]model.User
+	json.Unmarshal([]byte(updatedData), &userMap)
+
+	want := model.User{FirstName: "testUser", LastName: "test1",
+		Email: "test@email.com", Organization: "sales"}
+	got := userMap[1]
+	if want != got {
+		t.Errorf("problem during user save, got %v want %v",
+			got, want)
+	}
+
+}
+
+func TestPostProcessingInvalid(t *testing.T) {
+	//test server-side validation.
 }

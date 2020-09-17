@@ -47,11 +47,26 @@ func readUserFile(path string) ([]model.User, error) {
 	}
 
 	var userMap map[int]model.User
-	json.Unmarshal([]byte(content), &userMap)
+	users, err := JSONToUsers(content, &userMap)
+	if err != nil {
+		return nil, err
+	}
 
-	userSlice := make([]model.User, len(userMap))
+	return users, nil
+}
+
+//JSONToUsers takes a JSON string of users, puts them in a map
+//keyed on ID, then sorts by ID.
+func JSONToUsers(sourceBytes []byte, destMap *map[int]model.User) ([]model.User, error) {
+
+	err := json.Unmarshal(sourceBytes, destMap)
+	if err != nil {
+		return nil, err
+	}
+
+	userSlice := make([]model.User, len(*destMap))
 	i := 0
-	for _, val := range userMap {
+	for _, val := range *destMap {
 		userSlice[i] = val
 		i++
 	}
