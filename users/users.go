@@ -11,13 +11,20 @@ import (
 //ProcessRequestByType checks which HTTP verb the request has and processes it accordingly.
 func ProcessRequestByType(w http.ResponseWriter, r *http.Request, e *config.Env) {
 	switch r.Method {
-	case "GET":
+	case http.MethodGet:
 		if u, err := processGet(r, e.Datastore); err != nil {
 			e.ErrorLog.Println(err)
 			handleError(w, err)
 		} else {
 			w.Write(u)
 		}
+	case http.MethodPost:
+
+		w.WriteHeader(http.StatusOK)
+	case http.MethodPut:
+		//TODO
+	case http.MethodDelete:
+		//TODO
 	}
 }
 
@@ -33,6 +40,18 @@ func processGet(r *http.Request, db model.UserDataStore) ([]byte, error) {
 		return nil, err
 	}
 	return userBytes, nil
+}
+
+//processPost runs validation methods, then returns nil
+//if the post was successful or an error if one occurred.
+func processPost(r *http.Request, db model.UserDataStore) error {
+	return nil
+}
+
+//processPut runs validation methods, then returns nil
+//if the put was successful or an error if one occurred.
+func processPut(r *http.Request, db model.UserDataStore) error {
+	return nil
 }
 
 //TODO: jsonify errors because the front end needs them that way.

@@ -12,11 +12,13 @@ import (
 	"github.com/nmalensek/go-user-form/model"
 )
 
-type mockUsers struct{}
+type mockUsers struct {
+	UserData string
+}
 
 //GetAll retrieves all saved users.
-func (mu mockUsers) GetAll() ([]model.User, error) {
-	mockJSON := `{"1":{"id":1,"firstName":"test","lastName":"testLn","organization":"marketing","email":"test@email.com"},"2":{"id":2,"firstName":"test2","lastName":"testLn","organization":"sales","email":"new@employee.com"}}`
+func (mu *mockUsers) GetAll() ([]model.User, error) {
+	mockJSON := mu.dataSet()
 
 	var userMap map[int]model.User
 	json.Unmarshal([]byte(mockJSON), &userMap)
@@ -36,25 +38,36 @@ func (mu mockUsers) GetAll() ([]model.User, error) {
 }
 
 //Create creates a new user and saves it to the "database" file.
-func (mu mockUsers) Create(u model.User) error {
+func (mu *mockUsers) Create(u model.User) error {
 	return nil
 }
 
 //Edit modifies the properties of the given user based on UI input.
-func (mu mockUsers) Edit(u model.User) error {
+func (mu *mockUsers) Edit(u model.User) error {
 	return nil
 }
 
 //Delete finds the specified user by ID and deletes them.
-func (mu mockUsers) Delete(id int) error {
+func (mu *mockUsers) Delete(id int) error {
 	return nil
 }
 
-func TestProcessByType(t *testing.T) {
+func (mu *mockUsers) dataSet() string {
+	if mu.UserData == "" {
+		mu.UserData = `{"1":{"id":1,"firstName":"test","lastName":"testLn","organization":"marketing","email":"test@email.com"},"2":{"id":2,"firstName":"test2","lastName":"testLn","organization":"sales","email":"new@employee.com"}}`
+	}
+	return mu.UserData
+}
+
+func (mu *mockUsers) setDataSet() {
+
+}
+
+func TestGetProcessing(t *testing.T) {
 	testStore := &mockUsers{}
 	mockEnv := config.Env{Datastore: testStore}
 
-	req, err := http.NewRequest("GET", "/users/", nil)
+	req, err := http.NewRequest(http.MethodGet, "/users/", nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -74,4 +87,19 @@ func TestProcessByType(t *testing.T) {
 		t.Errorf("handler returned wrong content, got %v want %v",
 			got, want)
 	}
+}
+
+func TestPostProcessingGood(t *testing.T) {
+	testStore := &mockUsers{}
+	mockEnv := config.Env{Datastore: testStore}
+
+	req, err := http.NewRequest(http.MethodPost, "/users/",
+		strings.NewReader(`{"firstName":"testUser","lastName":"test1","email":"test@email1.com","organization":"sales"}`))
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	handler := http.HandlerFunc(config.MakeHandler(ProcessRequestByType, &mockEnv))
+	rec := httptest.NewRecorder()
+	handler.ServeHTTP(rec, req)
 }
