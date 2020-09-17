@@ -7,7 +7,7 @@ import (
 //UserDataStore defines the User type data operations.
 type UserDataStore interface {
 	GetAll() ([]User, error)
-	Create(User) error
+	Create(*User) error
 	Edit(User) error
 	Delete(int) error
 }

@@ -25,7 +25,7 @@ func (m *FileUserModel) GetAll() ([]model.User, error) {
 }
 
 //Create creates a new user and saves it to the "database" file.
-func (m *FileUserModel) Create(u model.User) error {
+func (m *FileUserModel) Create(u *model.User) error {
 	return errors.New("create: not implemented yet")
 }
 
@@ -46,8 +46,7 @@ func readUserFile(path string) ([]model.User, error) {
 		return nil, err
 	}
 
-	var userMap map[int]model.User
-	users, err := JSONToUsers(content, &userMap)
+	users, _, err := JSONToUsers(content)
 	if err != nil {
 		return nil, err
 	}
@@ -56,17 +55,16 @@ func readUserFile(path string) ([]model.User, error) {
 }
 
 //JSONToUsers takes a JSON string of users, puts them in a map
-//keyed on ID, then sorts by ID.
-func JSONToUsers(sourceBytes []byte, destMap *map[int]model.User) ([]model.User, error) {
-
-	err := json.Unmarshal(sourceBytes, destMap)
+//keyed on ID, then sorts by ID. Returns a slice and a map of users.
+func JSONToUsers(sourceBytes []byte) ([]model.User, map[int]model.User, error) {
+	userMap, err := JSONToUserMap(sourceBytes)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
-	userSlice := make([]model.User, len(*destMap))
+	userSlice := make([]model.User, len(userMap))
 	i := 0
-	for _, val := range *destMap {
+	for _, val := range userMap {
 		userSlice[i] = val
 		i++
 	}
@@ -75,5 +73,16 @@ func JSONToUsers(sourceBytes []byte, destMap *map[int]model.User) ([]model.User,
 		return userSlice[i].ID < userSlice[j].ID
 	})
 
-	return userSlice, nil
+	return userSlice, userMap, nil
+}
+
+//JSONToUserMap takes a JSON string of users, allocates a new map, and populates the map with the JSON string contents.
+func JSONToUserMap(sourceBytes []byte) (map[int]model.User, error) {
+	var userMap map[int]model.User
+	err := json.Unmarshal(sourceBytes, &userMap)
+	if err != nil {
+		return nil, err
+	}
+
+	return userMap, nil
 }

@@ -2,6 +2,7 @@ package users
 
 import (
 	"encoding/json"
+	"errors"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -21,9 +22,7 @@ type mockUsers struct {
 func (mu *mockUsers) GetAll() ([]model.User, error) {
 	mockJSON := mu.dataSet()
 
-	var userMap map[int]model.User
-
-	userSlice, err := fileusermodel.JSONToUsers([]byte(mockJSON), &userMap)
+	userSlice, _, err := fileusermodel.JSONToUsers([]byte(mockJSON))
 	if err != nil {
 		return nil, err
 	}
@@ -32,7 +31,30 @@ func (mu *mockUsers) GetAll() ([]model.User, error) {
 }
 
 //Create creates a new user and saves it to the "database" file.
-func (mu *mockUsers) Create(u model.User) error {
+func (mu *mockUsers) Create(u *model.User) error {
+	mockData := mu.dataSet()
+
+	_, userMap, err := fileusermodel.JSONToUsers([]byte(mockData))
+	if err != nil {
+		return err
+	}
+
+	var maxID int
+	for _, val := range userMap {
+		if val.ID > maxID {
+			maxID = val.ID
+		}
+	}
+
+	var newID = maxID + 1
+
+	if newID <= 0 {
+		return errors.New("error in create: user ID should not be less than or equal to 0")
+	}
+
+	u.ID = newID
+	userMap[newID] = *u
+
 	return nil
 }
 
@@ -101,8 +123,6 @@ func TestGetProcessing(t *testing.T) {
 //Test new user creation; new user should be added to the datastore.
 func TestPostProcessingGood(t *testing.T) {
 	testStore := &mockUsers{}
-	//make sure the test store is empty for ease of save checking.
-	testStore.setDataSet("", false)
 	mockEnv := config.Env{Datastore: testStore}
 
 	req, err := http.NewRequest(http.MethodPost, "/users/",
