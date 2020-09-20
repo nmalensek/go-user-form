@@ -5,6 +5,7 @@ import (
 	"errors"
 	"io/ioutil"
 	"log"
+	"math"
 	"sort"
 
 	"github.com/nmalensek/go-user-form/model"
@@ -85,4 +86,15 @@ func JSONToUserMap(sourceBytes []byte) (map[int]model.User, error) {
 	}
 
 	return userMap, nil
+}
+
+//GetNextID returns the next ID value to be assigned (current max ID + 1).
+func GetNextID(userMap map[int]model.User) int {
+	maxID := math.MinInt32
+	for _, val := range userMap {
+		if val.ID > maxID {
+			maxID = val.ID
+		}
+	}
+	return maxID + 1
 }

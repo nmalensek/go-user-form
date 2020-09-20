@@ -19,8 +19,11 @@ func ProcessRequestByType(w http.ResponseWriter, r *http.Request, e *config.Env)
 			w.Write(u)
 		}
 	case http.MethodPost:
-
-		w.WriteHeader(http.StatusOK)
+		if err := processPost(r, e.Datastore); err != nil {
+			handleError(w, err)
+		} else {
+			w.WriteHeader(http.StatusOK)
+		}
 	case http.MethodPut:
 		//TODO
 	case http.MethodDelete:
@@ -45,6 +48,13 @@ func processGet(r *http.Request, db model.UserDataStore) ([]byte, error) {
 //processPost runs validation methods, then returns nil
 //if the post was successful or an error if one occurred.
 func processPost(r *http.Request, db model.UserDataStore) error {
+	newUser := model.User{}
+	json.NewDecoder(r.Body).Decode(&newUser)
+	//TODO: validate.
+	err := db.Create(&newUser)
+	if err != nil {
+		return err
+	}
 	return nil
 }
 

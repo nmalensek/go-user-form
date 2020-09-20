@@ -14,6 +14,10 @@ import (
 	"github.com/nmalensek/go-user-form/model"
 )
 
+const (
+	baseMockData = `{"1":{"id":1,"firstName":"test","lastName":"testLn","organization":"marketing","email":"test@email.com"},"2":{"id":2,"firstName":"test2","lastName":"testLn","organization":"sales","email":"new@employee.com"}}`
+)
+
 type mockUsers struct {
 	UserData string
 }
@@ -39,21 +43,20 @@ func (mu *mockUsers) Create(u *model.User) error {
 		return err
 	}
 
-	var maxID int
-	for _, val := range userMap {
-		if val.ID > maxID {
-			maxID = val.ID
-		}
-	}
-
-	var newID = maxID + 1
+	var newID = fileusermodel.GetNextID(userMap)
 
 	if newID <= 0 {
 		return errors.New("error in create: user ID should not be less than or equal to 0")
 	}
 
 	u.ID = newID
-	userMap[newID] = *u
+
+	JSONUser, err := u.JSONString()
+	if err != nil {
+		return err
+	}
+
+	mu.setDataSet(string(JSONUser), true)
 
 	return nil
 }
@@ -70,7 +73,7 @@ func (mu *mockUsers) Delete(id int) error {
 
 func (mu *mockUsers) dataSet() string {
 	if mu.UserData == "" {
-		mu.UserData = `{"1":{"id":1,"firstName":"test","lastName":"testLn","organization":"marketing","email":"test@email.com"},"2":{"id":2,"firstName":"test2","lastName":"testLn","organization":"sales","email":"new@employee.com"}}`
+		mu.UserData = baseMockData
 	}
 	return mu.UserData
 }
@@ -126,7 +129,7 @@ func TestPostProcessingGood(t *testing.T) {
 	mockEnv := config.Env{Datastore: testStore}
 
 	req, err := http.NewRequest(http.MethodPost, "/users/",
-		strings.NewReader(`{"firstName":"testUser","lastName":"test1","email":"test@email1.com","organization":"sales"}`))
+		strings.NewReader(`{"firstName":"testUser","lastName":"test1","email":"test@email.com","organization":"sales"}`))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -145,9 +148,9 @@ func TestPostProcessingGood(t *testing.T) {
 	var userMap map[int]model.User
 	json.Unmarshal([]byte(updatedData), &userMap)
 
-	want := model.User{FirstName: "testUser", LastName: "test1",
+	want := model.User{ID: 3, FirstName: "testUser", LastName: "test1",
 		Email: "test@email.com", Organization: "sales"}
-	got := userMap[1]
+	got := userMap[3]
 	if want != got {
 		t.Errorf("problem during user save, got %v want %v",
 			got, want)

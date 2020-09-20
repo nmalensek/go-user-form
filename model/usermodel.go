@@ -1,6 +1,7 @@
 package model
 
 import (
+	"encoding/json"
 	"fmt"
 )
 
@@ -22,5 +23,14 @@ type User struct {
 }
 
 func (u User) String() string {
-	return fmt.Sprintf("%v\t%v\t%v\t%v", u.FirstName, u.LastName, u.Email, u.Organization)
+	return fmt.Sprintf("%v\t%v\t%v\t%v\t%v", u.ID, u.FirstName, u.LastName, u.Email, u.Organization)
+}
+
+//JSONString returns the JSON version of the user.
+func (u User) JSONString() ([]byte, error) {
+	JSONUser, err := json.Marshal(u)
+	if err != nil {
+		return nil, err
+	}
+	return JSONUser, nil
 }
