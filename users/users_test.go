@@ -152,7 +152,7 @@ func TestPostProcessingGood(t *testing.T) {
 		Email: "test@email.com", Organization: "sales"}
 	got := userMap[3]
 	if want != got {
-		t.Errorf("problem during user save, got %v want %v",
+		t.Errorf("incorrect user save data, got %v want %v",
 			got, want)
 	}
 
