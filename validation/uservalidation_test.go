@@ -84,3 +84,22 @@ func TestIncompleteEntry(t *testing.T) {
 		}
 	}
 }
+
+func TestErrorType(t *testing.T) {
+	errs := UserErrors{Message: "Test"}
+
+	result := checkType(errs)
+
+	if result != "UserErrors" {
+		t.Errorf("Expected type UserErrors but got %v", result)
+	}
+}
+
+func checkType(e error) string {
+	switch e.(type) {
+	case UserErrors:
+		return "UserErrors"
+	default:
+		return string(e.Error())
+	}
+}

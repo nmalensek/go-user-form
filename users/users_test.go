@@ -1,8 +1,10 @@
 package users
 
 import (
+	"bytes"
 	"encoding/json"
 	"errors"
+	"log"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -97,10 +99,16 @@ func (mu *mockUsers) setDataSet(newData string, append bool) {
 	}
 }
 
+func makeMockEnv() config.Env {
+	testStore := &mockUsers{}
+	var buf bytes.Buffer
+	testLogger := log.New(&buf, "test log: ", log.Lshortfile)
+	return config.Env{Datastore: testStore, ErrorLog: testLogger}
+}
+
 //Test getting all users; method should return all users in the datastore.
 func TestGetProcessing(t *testing.T) {
-	testStore := &mockUsers{}
-	mockEnv := config.Env{Datastore: testStore}
+	mockEnv := makeMockEnv()
 
 	req, err := http.NewRequest(http.MethodGet, "/users/", nil)
 	if err != nil {
@@ -160,8 +168,7 @@ func TestPostProcessingGood(t *testing.T) {
 }
 
 func TestPostMissingFields(t *testing.T) {
-	testStore := &mockUsers{}
-	mockEnv := config.Env{Datastore: testStore}
+	mockEnv := makeMockEnv()
 
 	req, err := http.NewRequest(http.MethodPost, "/users/",
 		strings.NewReader(`{"firstName":"testUser","email":"test@email.com","organization":"sales"}`))
@@ -178,22 +185,50 @@ func TestPostMissingFields(t *testing.T) {
 			rec.Code, http.StatusInternalServerError)
 	}
 
-	errs := make([]validation.UserError, 1)
+	var errs validation.UserErrors
 	json.NewDecoder(rec.Body).Decode(&errs)
 
-	if len(errs) != 1 {
-		t.Errorf("Expected one error, got %v", len(errs))
+	if len(errs.ErrorList) != 1 {
+		t.Errorf("Expected one error, got %v errors.", len(errs.ErrorList))
 	}
 
 	want := validation.UserError{PropName: "LastName", PropValue: ""}
-	got := validation.UserError{PropName: errs[0].PropName, PropValue: errs[0].PropValue}
+	got := validation.UserError{PropName: errs.ErrorList[0].PropName, PropValue: errs.ErrorList[0].PropValue}
 
 	if got != want {
 		t.Errorf("Got %v, want %v", got, want)
 	}
-
 }
 
 func TestPostInvalidEmail(t *testing.T) {
+	mockEnv := makeMockEnv()
 
+	req, err := http.NewRequest(http.MethodPost, "/users/",
+		strings.NewReader(`{"firstName":"testUser", "lastName":"test","email":"test@.net","organization":"sales"}`))
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	handler := http.HandlerFunc(config.MakeHandler(ProcessRequestByType, &mockEnv))
+	rec := httptest.NewRecorder()
+	handler.ServeHTTP(rec, req)
+
+	if rec.Code != http.StatusInternalServerError {
+		t.Errorf("handler returned wrong status code: got %v want %v",
+			rec.Code, http.StatusInternalServerError)
+	}
+
+	var errs validation.UserErrors
+	json.NewDecoder(rec.Body).Decode(&errs)
+
+	if len(errs.ErrorList) != 1 {
+		t.Errorf("Expected one error, got %v errors.", len(errs.ErrorList))
+	}
+
+	want := validation.UserError{PropName: "Email", Message: validation.IncorrectFormatMessage("Email")}
+	got := validation.UserError{PropName: errs.ErrorList[0].PropName, Message: errs.ErrorList[0].Message}
+
+	if got != want {
+		t.Errorf("Got %v, want %v", got, want)
+	}
 }

@@ -2,10 +2,12 @@ package users
 
 import (
 	"encoding/json"
+	"log"
 	"net/http"
 
 	"github.com/nmalensek/go-user-form/config"
 	"github.com/nmalensek/go-user-form/model"
+	"github.com/nmalensek/go-user-form/validation"
 )
 
 //ProcessRequestByType checks which HTTP verb the request has and processes it accordingly.
@@ -13,14 +15,13 @@ func ProcessRequestByType(w http.ResponseWriter, r *http.Request, e *config.Env)
 	switch r.Method {
 	case http.MethodGet:
 		if u, err := processGet(r, e.Datastore); err != nil {
-			e.ErrorLog.Println(err)
-			handleError(w, err)
+			handleLogError(w, err, e.ErrorLog)
 		} else {
 			w.Write(u)
 		}
 	case http.MethodPost:
 		if err := processPost(r, e.Datastore); err != nil {
-			handleError(w, err)
+			handleLogError(w, err, e.ErrorLog)
 		} else {
 			w.WriteHeader(http.StatusOK)
 		}
@@ -50,7 +51,13 @@ func processGet(r *http.Request, db model.UserDataStore) ([]byte, error) {
 func processPost(r *http.Request, db model.UserDataStore) error {
 	newUser := model.User{}
 	json.NewDecoder(r.Body).Decode(&newUser)
-	//TODO: validate.
+
+	inputErrors := validation.ValidateInput(newUser)
+
+	if len(inputErrors) > 0 {
+		return validation.UserErrors{Message: "Invalid input received, see ErrorList for details.", ErrorList: inputErrors}
+	}
+
 	err := db.Create(&newUser)
 	if err != nil {
 		return err
@@ -64,8 +71,24 @@ func processPut(r *http.Request, db model.UserDataStore) error {
 	return nil
 }
 
-//TODO: jsonify errors because the front end needs them that way.
-func handleError(w http.ResponseWriter, e error) {
+//handleError logs the error that occurred, writes a 500 HTTP code response header, then sends details about the error back to the requestor if applicable.
+func handleLogError(w http.ResponseWriter, e error, log *log.Logger) {
+	log.Println(e)
+
+	var resp []byte
+	switch e.(type) {
+	case validation.UserErrors:
+		data, err := json.Marshal(e)
+		if err != nil {
+			log.Println(err.Error())
+			resp = []byte("An error occurred while processing your request, please try again later.")
+		} else {
+			resp = data
+		}
+	default:
+		resp = []byte(e.Error())
+	}
+
 	w.WriteHeader(500)
-	w.Write([]byte(e.Error()))
+	w.Write([]byte(resp))
 }
