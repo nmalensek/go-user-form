@@ -9,6 +9,7 @@ import (
 	"testing"
 
 	"github.com/nmalensek/go-user-form/fileusermodel"
+	"github.com/nmalensek/go-user-form/validation"
 
 	"github.com/nmalensek/go-user-form/config"
 	"github.com/nmalensek/go-user-form/model"
@@ -158,6 +159,41 @@ func TestPostProcessingGood(t *testing.T) {
 
 }
 
-func TestPostProcessingInvalid(t *testing.T) {
-	//test server-side validation.
+func TestPostMissingFields(t *testing.T) {
+	testStore := &mockUsers{}
+	mockEnv := config.Env{Datastore: testStore}
+
+	req, err := http.NewRequest(http.MethodPost, "/users/",
+		strings.NewReader(`{"firstName":"testUser","email":"test@email.com","organization":"sales"}`))
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	handler := http.HandlerFunc(config.MakeHandler(ProcessRequestByType, &mockEnv))
+	rec := httptest.NewRecorder()
+	handler.ServeHTTP(rec, req)
+
+	if rec.Code != http.StatusInternalServerError {
+		t.Errorf("handler returned wrong status code: got %v want %v",
+			rec.Code, http.StatusInternalServerError)
+	}
+
+	errs := make([]validation.UserError, 1)
+	json.NewDecoder(rec.Body).Decode(&errs)
+
+	if len(errs) != 1 {
+		t.Errorf("Expected one error, got %v", len(errs))
+	}
+
+	want := validation.UserError{PropName: "LastName", PropValue: ""}
+	got := validation.UserError{PropName: errs[0].PropName, PropValue: errs[0].PropValue}
+
+	if got != want {
+		t.Errorf("Got %v, want %v", got, want)
+	}
+
+}
+
+func TestPostInvalidEmail(t *testing.T) {
+
 }

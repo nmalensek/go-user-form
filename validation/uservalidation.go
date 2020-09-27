@@ -16,8 +16,8 @@ var EmailPattern = regexp.MustCompile(`^[a-zA-Z0-9.!#$%&'*+/=?^_{|}~-]+@[a-zA-Z0
 func ValidateInput(subj model.User) []UserError {
 	errs := make([]UserError, 0)
 	stringProps := []ValItem{
-		ValItem{name: "FirstName", val: subj.FirstName},
-		ValItem{name: "LastName", val: subj.LastName},
+		ValItem{name: "FirstName", friendlyName: "First Name", val: subj.FirstName},
+		ValItem{name: "LastName", friendlyName: "Last Name", val: subj.LastName},
 		ValItem{name: "Email", val: subj.Email},
 		ValItem{name: "Organization", val: subj.Organization}}
 
@@ -40,16 +40,24 @@ type UserError struct {
 
 //ValItem is a property name and its value.
 type ValItem struct {
-	name    string
-	val     string
-	pattern *regexp.Regexp
+	name         string
+	val          string
+	friendlyName string
+	pattern      *regexp.Regexp
+}
+
+func (v *ValItem) getFriendlyName() string {
+	if v.friendlyName == "" {
+		return v.name
+	}
+	return v.friendlyName
 }
 
 //appendErrorIfReq appends an error if an item is missing and is required.
 func appendErrorIfReq(e *[]UserError, item []ValItem) {
 	for _, p := range item {
 		if p.val == "" {
-			uErr := UserError{PropName: p.name, PropValue: p.val, Message: RequiredMessage(p.name)}
+			uErr := UserError{PropName: p.name, PropValue: p.val, Message: RequiredMessage(p.getFriendlyName())}
 			*e = append(*e, uErr)
 		}
 	}
@@ -59,7 +67,7 @@ func appendErrorIfReq(e *[]UserError, item []ValItem) {
 func appendErrorIfNoMatch(e *[]UserError, item []ValItem) {
 	for _, p := range item {
 		if !p.pattern.MatchString(p.val) {
-			newErr := UserError{PropName: p.name, PropValue: p.val, Message: IncorrectFormatMessage(p.name)}
+			newErr := UserError{PropName: p.name, PropValue: p.val, Message: IncorrectFormatMessage(p.getFriendlyName())}
 			*e = append(*e, newErr)
 		}
 	}
