@@ -31,13 +31,6 @@ func ValidateInput(subj model.User) []UserError {
 	return errs
 }
 
-//UserError contains details about validation errors for a user object.
-type UserError struct {
-	PropName  string `json:"name"`
-	PropValue string `json:"value"`
-	Message   string `json:"msg"`
-}
-
 //ValItem is a property name and its value.
 type ValItem struct {
 	name         string
