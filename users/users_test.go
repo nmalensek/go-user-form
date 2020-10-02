@@ -65,7 +65,31 @@ func (mu *mockUsers) Create(u *model.User) error {
 }
 
 //Edit modifies the properties of the given user based on UI input.
-func (mu *mockUsers) Edit(u model.User) error {
+func (mu *mockUsers) Edit(u model.User, id int) error {
+	mockData := mu.dataSet()
+
+	userMap, err := fileusermodel.JSONToUserMap([]byte(mockData))
+	if err != nil {
+		return err
+	}
+
+	origUser, ok := userMap[id]
+	if !ok {
+		return errors.New("error: could not find user ID specified")
+	}
+
+	origUser.FirstName = u.FirstName
+	origUser.LastName = u.LastName
+	origUser.Email = u.Email
+	origUser.Organization = u.Organization
+
+	JSONBytes, err := json.Marshal(userMap)
+	if err != nil {
+		return err
+	}
+
+	mu.setDataSet(string(JSONBytes), false)
+
 	return nil
 }
 
@@ -230,5 +254,38 @@ func TestPostInvalidEmail(t *testing.T) {
 
 	if got != want {
 		t.Errorf("Got %v, want %v", got, want)
+	}
+}
+
+func TestPutValid(t *testing.T) {
+	mockEnv := makeMockEnv()
+
+	req, err := http.NewRequest(http.MethodPut, "/users/1",
+		strings.NewReader(`{"firstName":"editTestUser", "lastName":"test","email":"test@t.net","organization":"sales"}`))
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	handler := http.HandlerFunc(config.MakeHandler(ProcessRequestByType, &mockEnv))
+	rec := httptest.NewRecorder()
+	handler.ServeHTTP(rec, req)
+
+	if rec.Code != http.StatusOK {
+		t.Errorf("handler returned wrong status code: got %v want %v",
+			rec.Code, http.StatusOK)
+	}
+
+	updatedData, _ := mockEnv.Datastore.GetAll()
+	var got model.User
+	for _, item := range updatedData {
+		if item.ID == 1 {
+			got = item
+			break
+		}
+	}
+	want := model.User{ID: 1, FirstName: "editTestUser", LastName: "test", Email: "test@t.net", Organization: "sales"}
+
+	if got != want {
+		t.Errorf("got %v, want %v", got, want)
 	}
 }

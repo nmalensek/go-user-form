@@ -26,7 +26,11 @@ func ProcessRequestByType(w http.ResponseWriter, r *http.Request, e *config.Env)
 			w.WriteHeader(http.StatusOK)
 		}
 	case http.MethodPut:
-		//TODO
+		if err := processPut(r, e.Datastore); err != nil {
+			handleLogError(w, err, e.ErrorLog)
+		} else {
+			w.WriteHeader(http.StatusOK)
+		}
 	case http.MethodDelete:
 		//TODO
 	}
@@ -49,16 +53,12 @@ func processGet(r *http.Request, db model.UserDataStore) ([]byte, error) {
 //processPost runs validation methods, then returns nil
 //if the post was successful or an error if one occurred.
 func processPost(r *http.Request, db model.UserDataStore) error {
-	newUser := model.User{}
-	json.NewDecoder(r.Body).Decode(&newUser)
-
-	inputErrors := validation.ValidateInput(newUser)
-
-	if len(inputErrors) > 0 {
-		return validation.UserErrors{Message: "Invalid input received, see ErrorList for details.", ErrorList: inputErrors}
+	user, errs := validBodyToUser(r)
+	if errs != nil {
+		return errs
 	}
 
-	err := db.Create(&newUser)
+	err := db.Create(user)
 	if err != nil {
 		return err
 	}
@@ -68,7 +68,38 @@ func processPost(r *http.Request, db model.UserDataStore) error {
 //processPut runs validation methods, then returns nil
 //if the put was successful or an error if one occurred.
 func processPut(r *http.Request, db model.UserDataStore) error {
+	// u, valErrs := validBodyToUser(r)
+	// if valErrs != nil {
+	// 	return valErrs
+	// }
+
+	////TODO: get id from query string (no key)
+	// err := db.Edit(*u, )
+	// if err != nil {
+	// 	return err
+	// }
+
 	return nil
+}
+
+//processDelete checks for the user in the database and deletes them if
+//present or returns an error if they're not found.
+func processDelete(r *http.Request, db model.UserDataStore) error {
+
+	return nil
+}
+
+func validBodyToUser(r *http.Request) (*model.User, error) {
+	newUser := model.User{}
+	json.NewDecoder(r.Body).Decode(&newUser)
+
+	inputErrors := validation.ValidateInput(newUser)
+
+	if len(inputErrors) > 0 {
+		return nil, validation.UserErrors{Message: "Invalid input received, see ErrorList for details.", ErrorList: inputErrors}
+	}
+
+	return &newUser, nil
 }
 
 //handleError logs the error that occurred, writes a 500 HTTP code response header, then sends details about the error back to the requestor if applicable.

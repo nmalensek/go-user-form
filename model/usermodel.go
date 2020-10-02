@@ -9,7 +9,7 @@ import (
 type UserDataStore interface {
 	GetAll() ([]User, error)
 	Create(*User) error
-	Edit(User) error
+	Edit(User, int) error
 	Delete(int) error
 }
 

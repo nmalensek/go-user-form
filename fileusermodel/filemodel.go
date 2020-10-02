@@ -22,7 +22,12 @@ func (m *FileUserModel) GetAll() ([]model.User, error) {
 	if err != nil {
 		return nil, err
 	}
-	return currUsers, nil
+	//copying prevents the whole file from staying in memory,
+	//which is unnecessary right now because it's returning all users
+	//anyway instead of a subset. Done here to get in the habit of doing this.
+	u := make([]model.User, len(currUsers))
+	copy(u, currUsers)
+	return u, nil
 }
 
 //Create creates a new user and saves it to the "database" file.
@@ -31,7 +36,7 @@ func (m *FileUserModel) Create(u *model.User) error {
 }
 
 //Edit modifies the properties of the given user based on UI input.
-func (m *FileUserModel) Edit(u model.User) error {
+func (m *FileUserModel) Edit(u model.User, id int) error {
 	return errors.New("edit: not implemented yet")
 }
 
