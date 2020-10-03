@@ -83,6 +83,8 @@ func (mu *mockUsers) Edit(u model.User, id int) error {
 	origUser.Email = u.Email
 	origUser.Organization = u.Organization
 
+	userMap[id] = origUser
+
 	JSONBytes, err := json.Marshal(userMap)
 	if err != nil {
 		return err

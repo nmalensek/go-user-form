@@ -2,8 +2,12 @@ package users
 
 import (
 	"encoding/json"
+	"errors"
 	"log"
+	"math"
 	"net/http"
+	"regexp"
+	"strconv"
 
 	"github.com/nmalensek/go-user-form/config"
 	"github.com/nmalensek/go-user-form/model"
@@ -68,16 +72,20 @@ func processPost(r *http.Request, db model.UserDataStore) error {
 //processPut runs validation methods, then returns nil
 //if the put was successful or an error if one occurred.
 func processPut(r *http.Request, db model.UserDataStore) error {
-	// u, valErrs := validBodyToUser(r)
-	// if valErrs != nil {
-	// 	return valErrs
-	// }
+	u, valErrs := validBodyToUser(r)
+	if valErrs != nil {
+		return valErrs
+	}
 
-	////TODO: get id from query string (no key)
-	// err := db.Edit(*u, )
-	// if err != nil {
-	// 	return err
-	// }
+	id, ok := getIDFromPath(r.URL.EscapedPath())
+	if !ok {
+		return errors.New("Received malformed URI, please check input and try again")
+	}
+
+	err := db.Edit(*u, id)
+	if err != nil {
+		return err
+	}
 
 	return nil
 }
@@ -100,6 +108,24 @@ func validBodyToUser(r *http.Request) (*model.User, error) {
 	}
 
 	return &newUser, nil
+}
+
+func getIDFromPath(p string) (int, bool) {
+	//should end with after /number, don't care what comes before.
+	numberPatt := regexp.MustCompile(`/([0-9]+)$`)
+
+	//edit URI should be /users/id, so this should find the whole string and the ID if valid.
+	id := numberPatt.FindStringSubmatch(p)
+	if id == nil || len(id) != 2 {
+		return math.MinInt32, false
+	}
+
+	parsedID, err := strconv.Atoi(id[1])
+	if err != nil {
+		return math.MinInt32, false
+	}
+
+	return parsedID, true
 }
 
 //handleError logs the error that occurred, writes a 500 HTTP code response header, then sends details about the error back to the requestor if applicable.
