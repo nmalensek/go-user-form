@@ -291,3 +291,56 @@ func TestPutValid(t *testing.T) {
 		t.Errorf("got %v, want %v", got, want)
 	}
 }
+
+func TestPutInvalidID(t *testing.T) {
+	mockEnv := makeMockEnv()
+
+	req, err := http.NewRequest(http.MethodPut, "/users/1asdf",
+		strings.NewReader(`{"firstName":"editTestUser", "lastName":"test","email":"test@t.net","organization":"sales"}`))
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	handler := http.HandlerFunc(config.MakeHandler(ProcessRequestByType, &mockEnv))
+	rec := httptest.NewRecorder()
+	handler.ServeHTTP(rec, req)
+
+	if rec.Code != http.StatusInternalServerError {
+		t.Errorf("handler returned wrong status code: got %v want %v",
+			rec.Code, http.StatusInternalServerError)
+	}
+}
+
+func TestPutInvaliduser(t *testing.T) {
+	mockEnv := makeMockEnv()
+
+	req, err := http.NewRequest(http.MethodPut, "/users/1",
+		strings.NewReader(`{"firstName":"editTestUser", "email":"test@t.net","organization":"sales"}`))
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	handler := http.HandlerFunc(config.MakeHandler(ProcessRequestByType, &mockEnv))
+	rec := httptest.NewRecorder()
+	handler.ServeHTTP(rec, req)
+
+	if rec.Code != http.StatusInternalServerError {
+		t.Errorf("handler returned wrong status code: got %v want %v",
+			rec.Code, http.StatusInternalServerError)
+	}
+
+	var errs validation.UserErrors
+	json.NewDecoder(rec.Body).Decode(&errs)
+
+	if len(errs.ErrorList) != 1 {
+		t.Errorf("Expected one error, got %v errors.", len(errs.ErrorList))
+	}
+
+	want := validation.RequiredMessage("Last Name")
+	got := errs.ErrorList[0].Message
+
+	if got != want {
+		t.Errorf("got %v, want %v", got, want)
+	}
+
+}
