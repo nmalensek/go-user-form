@@ -4,7 +4,9 @@ import (
 	"bytes"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"log"
+	"math"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -309,9 +311,42 @@ func TestPutInvalidID(t *testing.T) {
 		t.Errorf("handler returned wrong status code: got %v want %v",
 			rec.Code, http.StatusInternalServerError)
 	}
+
+	gotErr := rec.Body.String()
+	wantErr := "Received malformed URI, please check input and try again"
+
+	if gotErr != wantErr {
+		t.Errorf("got %v, want %v", gotErr, wantErr)
+	}
 }
 
-func TestPutInvaliduser(t *testing.T) {
+func TestPutMissingID(t *testing.T) {
+	mockEnv := makeMockEnv()
+	fakeID := math.MaxInt64
+	req, err := http.NewRequest(http.MethodPut, fmt.Sprintf("/users/%v", fakeID),
+		strings.NewReader(`{"firstName":"editTestUser", "lastName":"test","email":"test@t.net","organization":"sales"}`))
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	handler := http.HandlerFunc(config.MakeHandler(ProcessRequestByType, &mockEnv))
+	rec := httptest.NewRecorder()
+	handler.ServeHTTP(rec, req)
+
+	if rec.Code != http.StatusInternalServerError {
+		t.Errorf("handler returned wrong status code: got %v want %v",
+			rec.Code, http.StatusInternalServerError)
+	}
+
+	gotErr := rec.Body.String()
+	wantErr := "error: could not find user ID specified"
+
+	if gotErr != wantErr {
+		t.Errorf("got %v, want %v", gotErr, wantErr)
+	}
+}
+
+func TestPutInvalidUser(t *testing.T) {
 	mockEnv := makeMockEnv()
 
 	req, err := http.NewRequest(http.MethodPut, "/users/1",
@@ -343,4 +378,28 @@ func TestPutInvaliduser(t *testing.T) {
 		t.Errorf("got %v, want %v", got, want)
 	}
 
+}
+
+func TestDeleteValid(t *testing.T) {
+
+}
+
+func TestDeleteInvalid(t *testing.T) {
+	mockEnv := makeMockEnv()
+
+	req, err := http.NewRequest(http.MethodPut, "/users/1", nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	handler := http.HandlerFunc(config.MakeHandler(ProcessRequestByType, &mockEnv))
+	rec := httptest.NewRecorder()
+	handler.ServeHTTP(rec, req)
+
+	if rec.Code != http.StatusInternalServerError {
+		t.Errorf("handler returned wrong status code: got %v want %v",
+			rec.Code, http.StatusInternalServerError)
+	}
+
+	//check error message is correct.
 }
