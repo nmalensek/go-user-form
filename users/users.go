@@ -43,7 +43,11 @@ func ProcessRequestByType(w http.ResponseWriter, r *http.Request, e *config.Env)
 			w.WriteHeader(http.StatusOK)
 		}
 	case http.MethodDelete:
-		//TODO
+		if err := processDelete(r, e.Datastore); err != nil {
+			handleLogError(w, err, e.ErrorLog)
+		} else {
+			w.WriteHeader(http.StatusOK)
+		}
 	}
 }
 
@@ -100,7 +104,16 @@ func processPut(r *http.Request, db model.UserDataStore) error {
 //processDelete checks for the user in the database and deletes them if
 //present or returns an error if they're not found.
 func processDelete(r *http.Request, db model.UserDataStore) error {
+	id, ok := getIDFromPath(r.URL.EscapedPath())
 
+	if !ok {
+		return errors.New(MalformedURI)
+	}
+
+	err := db.Delete(id)
+	if err != nil {
+		return err
+	}
 	return nil
 }
 

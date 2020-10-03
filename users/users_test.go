@@ -99,6 +99,23 @@ func (mu *mockUsers) Edit(u model.User, id int) error {
 
 //Delete finds the specified user by ID and deletes them.
 func (mu *mockUsers) Delete(id int) error {
+	mockData := mu.dataSet()
+
+	userMap, err := fileusermodel.JSONToUserMap([]byte(mockData))
+	if err != nil {
+		return err
+	}
+	_, ok := userMap[id]
+	if !ok {
+		return errors.New(model.CouldNotFind)
+	}
+
+	delete(userMap, id)
+
+	JSONBytes, _ := json.Marshal(userMap)
+
+	mu.setDataSet(string(JSONBytes), false)
+
 	return nil
 }
 
@@ -146,10 +163,7 @@ func TestGetProcessing(t *testing.T) {
 	rec := httptest.NewRecorder()
 	handler.ServeHTTP(rec, req)
 
-	if rec.Code != http.StatusOK {
-		t.Errorf("handler returned wrong status code: got %v want %v",
-			rec.Code, http.StatusOK)
-	}
+	compareStatusCode(rec.Code, http.StatusOK, t)
 
 	want := `[{"id":1,"firstName":"test","lastName":"testLn","organization":"marketing","email":"test@email.com"},{"id":2,"firstName":"test2","lastName":"testLn","organization":"sales","email":"new@employee.com"}]`
 	got := rec.Body.String()
@@ -175,10 +189,7 @@ func TestPostProcessingGood(t *testing.T) {
 	rec := httptest.NewRecorder()
 	handler.ServeHTTP(rec, req)
 
-	if rec.Code != http.StatusOK {
-		t.Errorf("handler returned wrong status code: got %v want %v",
-			rec.Code, http.StatusOK)
-	}
+	compareStatusCode(rec.Code, http.StatusOK, t)
 
 	updatedData := testStore.dataSet()
 
@@ -208,10 +219,7 @@ func TestPostMissingFields(t *testing.T) {
 	rec := httptest.NewRecorder()
 	handler.ServeHTTP(rec, req)
 
-	if rec.Code != http.StatusInternalServerError {
-		t.Errorf("handler returned wrong status code: got %v want %v",
-			rec.Code, http.StatusInternalServerError)
-	}
+	compareStatusCode(rec.Code, http.StatusInternalServerError, t)
 
 	var errs validation.UserErrors
 	json.NewDecoder(rec.Body).Decode(&errs)
@@ -223,9 +231,7 @@ func TestPostMissingFields(t *testing.T) {
 	want := validation.UserError{PropName: "LastName", PropValue: ""}
 	got := validation.UserError{PropName: errs.ErrorList[0].PropName, PropValue: errs.ErrorList[0].PropValue}
 
-	if got != want {
-		t.Errorf("Got %v, want %v", got, want)
-	}
+	compareGotWant(got, want, t)
 }
 
 func TestPostInvalidEmail(t *testing.T) {
@@ -241,10 +247,7 @@ func TestPostInvalidEmail(t *testing.T) {
 	rec := httptest.NewRecorder()
 	handler.ServeHTTP(rec, req)
 
-	if rec.Code != http.StatusInternalServerError {
-		t.Errorf("handler returned wrong status code: got %v want %v",
-			rec.Code, http.StatusInternalServerError)
-	}
+	compareStatusCode(rec.Code, http.StatusInternalServerError, t)
 
 	var errs validation.UserErrors
 	json.NewDecoder(rec.Body).Decode(&errs)
@@ -256,9 +259,7 @@ func TestPostInvalidEmail(t *testing.T) {
 	want := validation.UserError{PropName: "Email", Message: validation.IncorrectFormatMessage("Email")}
 	got := validation.UserError{PropName: errs.ErrorList[0].PropName, Message: errs.ErrorList[0].Message}
 
-	if got != want {
-		t.Errorf("Got %v, want %v", got, want)
-	}
+	compareGotWant(got, want, t)
 }
 
 func TestPutValid(t *testing.T) {
@@ -274,10 +275,7 @@ func TestPutValid(t *testing.T) {
 	rec := httptest.NewRecorder()
 	handler.ServeHTTP(rec, req)
 
-	if rec.Code != http.StatusOK {
-		t.Errorf("handler returned wrong status code: got %v want %v",
-			rec.Code, http.StatusOK)
-	}
+	compareStatusCode(rec.Code, http.StatusOK, t)
 
 	updatedData, _ := mockEnv.Datastore.GetAll()
 	var got model.User
@@ -289,9 +287,7 @@ func TestPutValid(t *testing.T) {
 	}
 	want := model.User{ID: 1, FirstName: "editTestUser", LastName: "test", Email: "test@t.net", Organization: "sales"}
 
-	if got != want {
-		t.Errorf("got %v, want %v", got, want)
-	}
+	compareGotWant(got, want, t)
 }
 
 func TestPutInvalidID(t *testing.T) {
@@ -307,17 +303,9 @@ func TestPutInvalidID(t *testing.T) {
 	rec := httptest.NewRecorder()
 	handler.ServeHTTP(rec, req)
 
-	if rec.Code != http.StatusInternalServerError {
-		t.Errorf("handler returned wrong status code: got %v want %v",
-			rec.Code, http.StatusInternalServerError)
-	}
+	compareStatusCode(rec.Code, http.StatusInternalServerError, t)
 
-	gotErr := rec.Body.String()
-	wantErr := MalformedURI
-
-	if gotErr != wantErr {
-		t.Errorf("got %v, want %v", gotErr, wantErr)
-	}
+	compareGotWant(rec.Body.String(), MalformedURI, t)
 }
 
 func TestPutMissingID(t *testing.T) {
@@ -333,17 +321,9 @@ func TestPutMissingID(t *testing.T) {
 	rec := httptest.NewRecorder()
 	handler.ServeHTTP(rec, req)
 
-	if rec.Code != http.StatusInternalServerError {
-		t.Errorf("handler returned wrong status code: got %v want %v",
-			rec.Code, http.StatusInternalServerError)
-	}
+	compareStatusCode(rec.Code, http.StatusInternalServerError, t)
 
-	gotErr := rec.Body.String()
-	wantErr := model.CouldNotFind
-
-	if gotErr != wantErr {
-		t.Errorf("got %v, want %v", gotErr, wantErr)
-	}
+	compareGotWant(rec.Body.String(), model.CouldNotFind, t)
 }
 
 func TestPutInvalidUser(t *testing.T) {
@@ -359,10 +339,7 @@ func TestPutInvalidUser(t *testing.T) {
 	rec := httptest.NewRecorder()
 	handler.ServeHTTP(rec, req)
 
-	if rec.Code != http.StatusInternalServerError {
-		t.Errorf("handler returned wrong status code: got %v want %v",
-			rec.Code, http.StatusInternalServerError)
-	}
+	compareStatusCode(rec.Code, http.StatusInternalServerError, t)
 
 	var errs validation.UserErrors
 	json.NewDecoder(rec.Body).Decode(&errs)
@@ -371,23 +348,26 @@ func TestPutInvalidUser(t *testing.T) {
 		t.Errorf("Expected one error, got %v errors.", len(errs.ErrorList))
 	}
 
-	want := validation.RequiredMessage("Last Name")
-	got := errs.ErrorList[0].Message
-
-	if got != want {
-		t.Errorf("got %v, want %v", got, want)
-	}
-
+	compareGotWant(errs.ErrorList[0].Message, validation.RequiredMessage("Last Name"), t)
 }
 
 func TestDeleteValid(t *testing.T) {
-
-}
-
-func TestDeleteInvalid(t *testing.T) {
 	mockEnv := makeMockEnv()
 
-	req, err := http.NewRequest(http.MethodPut, "/users/1", strings.NewReader(""))
+	//make sure user to delete's there to make sure delete's actually modifying collection.
+	users, _ := mockEnv.Datastore.GetAll()
+	var ok bool
+	for _, v := range users {
+		if v.ID == 1 {
+			ok = true
+			break
+		}
+	}
+	if !ok {
+		t.Errorf("test user not in database originally.")
+	}
+
+	req, err := http.NewRequest(http.MethodDelete, "/users/1", strings.NewReader(""))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -396,10 +376,47 @@ func TestDeleteInvalid(t *testing.T) {
 	rec := httptest.NewRecorder()
 	handler.ServeHTTP(rec, req)
 
-	if rec.Code != http.StatusInternalServerError {
-		t.Errorf("handler returned wrong status code: got %v want %v",
-			rec.Code, http.StatusInternalServerError)
+	compareStatusCode(rec.Code, http.StatusOK, t)
+
+	//user from before shouldn't be there anymore.
+	users, _ = mockEnv.Datastore.GetAll()
+	for _, v := range users {
+		if v.ID == 1 {
+			ok = false
+			break
+		}
+	}
+	compareGotWant(ok, true, t)
+}
+
+func TestDeleteInvalid(t *testing.T) {
+	mockEnv := makeMockEnv()
+	fakeID := math.MaxInt64
+	req, err := http.NewRequest(http.MethodDelete, fmt.Sprintf("/users/%v", fakeID), strings.NewReader(""))
+	if err != nil {
+		t.Fatal(err)
 	}
 
-	//check error message is correct.
+	handler := http.HandlerFunc(config.MakeHandler(ProcessRequestByType, &mockEnv))
+	rec := httptest.NewRecorder()
+	handler.ServeHTTP(rec, req)
+
+	compareStatusCode(rec.Code, http.StatusInternalServerError, t)
+
+	gotErr := rec.Body.String()
+	wantErr := model.CouldNotFind
+
+	compareGotWant(gotErr, wantErr, t)
+}
+
+func compareGotWant(got interface{}, want interface{}, t *testing.T) {
+	if got != want {
+		t.Errorf("got %v, want %v", got, want)
+	}
+}
+
+func compareStatusCode(got int, want int, t *testing.T) {
+	if got != want {
+		t.Errorf("handler returned wrong status code: got %v want %v", got, want)
+	}
 }
