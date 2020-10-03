@@ -5,6 +5,12 @@ import (
 	"fmt"
 )
 
+//Model error message constants.
+const (
+	CouldNotFind = "Could not find specified user in database."
+	CreateError  = "Could not create user, unable to assign valid ID."
+)
+
 //UserDataStore defines the User type data operations.
 type UserDataStore interface {
 	GetAll() ([]User, error)

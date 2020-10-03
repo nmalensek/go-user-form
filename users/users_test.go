@@ -51,7 +51,7 @@ func (mu *mockUsers) Create(u *model.User) error {
 	var newID = fileusermodel.GetNextID(userMap)
 
 	if newID <= 0 {
-		return errors.New("error in create: user ID should not be less than or equal to 0")
+		return errors.New(model.CreateError)
 	}
 
 	u.ID = newID
@@ -77,7 +77,7 @@ func (mu *mockUsers) Edit(u model.User, id int) error {
 
 	origUser, ok := userMap[id]
 	if !ok {
-		return errors.New("error: could not find user ID specified")
+		return errors.New(model.CouldNotFind)
 	}
 
 	origUser.FirstName = u.FirstName
@@ -313,7 +313,7 @@ func TestPutInvalidID(t *testing.T) {
 	}
 
 	gotErr := rec.Body.String()
-	wantErr := "Received malformed URI, please check input and try again"
+	wantErr := MalformedURI
 
 	if gotErr != wantErr {
 		t.Errorf("got %v, want %v", gotErr, wantErr)
@@ -339,7 +339,7 @@ func TestPutMissingID(t *testing.T) {
 	}
 
 	gotErr := rec.Body.String()
-	wantErr := "error: could not find user ID specified"
+	wantErr := model.CouldNotFind
 
 	if gotErr != wantErr {
 		t.Errorf("got %v, want %v", gotErr, wantErr)
@@ -387,7 +387,7 @@ func TestDeleteValid(t *testing.T) {
 func TestDeleteInvalid(t *testing.T) {
 	mockEnv := makeMockEnv()
 
-	req, err := http.NewRequest(http.MethodPut, "/users/1", nil)
+	req, err := http.NewRequest(http.MethodPut, "/users/1", strings.NewReader(""))
 	if err != nil {
 		t.Fatal(err)
 	}

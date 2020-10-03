@@ -14,6 +14,13 @@ import (
 	"github.com/nmalensek/go-user-form/validation"
 )
 
+//Handler error messages.
+const (
+	MalformedURI         = "Received malformed URI, please check input and try again"
+	InvalidInput         = "Invalid input received, see ErrorList for details."
+	ErrorWhileProcessing = "An error occurred while processing your request, please try again later."
+)
+
 //ProcessRequestByType checks which HTTP verb the request has and processes it accordingly.
 func ProcessRequestByType(w http.ResponseWriter, r *http.Request, e *config.Env) {
 	switch r.Method {
@@ -79,7 +86,7 @@ func processPut(r *http.Request, db model.UserDataStore) error {
 
 	id, ok := getIDFromPath(r.URL.EscapedPath())
 	if !ok {
-		return errors.New("Received malformed URI, please check input and try again")
+		return errors.New(MalformedURI)
 	}
 
 	err := db.Edit(*u, id)
@@ -104,7 +111,7 @@ func validBodyToUser(r *http.Request) (*model.User, error) {
 	inputErrors := validation.ValidateInput(newUser)
 
 	if len(inputErrors) > 0 {
-		return nil, validation.UserErrors{Message: "Invalid input received, see ErrorList for details.", ErrorList: inputErrors}
+		return nil, validation.UserErrors{Message: InvalidInput, ErrorList: inputErrors}
 	}
 
 	return &newUser, nil
@@ -138,7 +145,7 @@ func handleLogError(w http.ResponseWriter, e error, log *log.Logger) {
 		data, err := json.Marshal(e)
 		if err != nil {
 			log.Println(err.Error())
-			resp = []byte("An error occurred while processing your request, please try again later.")
+			resp = []byte(ErrorWhileProcessing)
 		} else {
 			resp = data
 		}
