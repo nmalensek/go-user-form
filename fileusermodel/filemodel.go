@@ -38,25 +38,16 @@ func (m *FileUserModel) GetAll() ([]model.User, error) {
 
 //Create creates a new user and saves it to the "database" file.
 func (m *FileUserModel) Create(u *model.User) error {
-	fileData, err := readUserFile(m.Filepath)
+	userMap, err := readFileToMap(m.Filepath)
 	if err != nil {
 		return err
 	}
 
-	_, users, err := JSONToUsers(fileData)
-	if err != nil {
-		return err
-	}
+	u.ID = GetNextID(userMap)
 
-	u.ID = GetNextID(users)
+	userMap[u.ID] = *u
 
-	users[u.ID] = *u
-	userBytes, err := json.Marshal(users)
-	if err != nil {
-		return err
-	}
-
-	err = saveBytesToFile(m.Filepath, userBytes)
+	err = saveMapToFile(m.Filepath, userMap)
 	if err != nil {
 		return err
 	}
@@ -71,7 +62,24 @@ func (m *FileUserModel) Edit(u model.User, id int) error {
 
 //Delete finds the specified user by ID and deletes them.
 func (m *FileUserModel) Delete(id int) error {
-	return errors.New("delete: not implemented yet")
+	userMap, err := readFileToMap(m.Filepath)
+	if err != nil {
+		return err
+	}
+
+	_, ok := userMap[id]
+	if !ok {
+		return errors.New(model.CouldNotFind)
+	}
+
+	delete(userMap, id)
+
+	err = saveMapToFile(m.Filepath, userMap)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
 
 func readUserFile(path string) ([]byte, error) {
@@ -89,13 +97,31 @@ func readUserFile(path string) ([]byte, error) {
 	return cop, nil
 }
 
-func saveBytesToFile(path string, b []byte) error {
-	err := ioutil.WriteFile(path, b, 0644)
+func saveMapToFile(path string, u map[int]model.User) error {
+	userBytes, err := json.Marshal(u)
+	if err != nil {
+		return err
+	}
+
+	err = ioutil.WriteFile(path, userBytes, 0644)
 	if err != nil {
 		log.Fatal(err)
 		return errors.New(databaseUnavailable)
 	}
 	return nil
+}
+
+func readFileToMap(path string) (map[int]model.User, error) {
+	fileData, err := readUserFile(path)
+	if err != nil {
+		return nil, err
+	}
+
+	_, users, err := JSONToUsers(fileData)
+	if err != nil {
+		return nil, err
+	}
+	return users, nil
 }
 
 //JSONToUsers takes a JSON string of users, puts them in a map
