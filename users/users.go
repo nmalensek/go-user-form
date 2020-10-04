@@ -68,7 +68,7 @@ func processGet(r *http.Request, db model.UserDataStore) ([]byte, error) {
 //processPost runs validation methods, then returns nil
 //if the post was successful or an error if one occurred.
 func processPost(r *http.Request, db model.UserDataStore) error {
-	user, errs := validBodyToUser(r)
+	user, errs := validateBodyToUser(r)
 	if errs != nil {
 		return errs
 	}
@@ -83,7 +83,7 @@ func processPost(r *http.Request, db model.UserDataStore) error {
 //processPut runs validation methods, then returns nil
 //if the put was successful or an error if one occurred.
 func processPut(r *http.Request, db model.UserDataStore) error {
-	u, valErrs := validBodyToUser(r)
+	u, valErrs := validateBodyToUser(r)
 	if valErrs != nil {
 		return valErrs
 	}
@@ -117,7 +117,9 @@ func processDelete(r *http.Request, db model.UserDataStore) error {
 	return nil
 }
 
-func validBodyToUser(r *http.Request) (*model.User, error) {
+//validateBodyToUser validates the request body to make sure a complete User object was submitted.
+//If valid, returns a pointer to a new model.User struct from the submitted object.
+func validateBodyToUser(r *http.Request) (*model.User, error) {
 	newUser := model.User{}
 	json.NewDecoder(r.Body).Decode(&newUser)
 
@@ -130,11 +132,12 @@ func validBodyToUser(r *http.Request) (*model.User, error) {
 	return &newUser, nil
 }
 
+//getIDFromPath tries to find a user ID (int) as the last set of characters in the URI string.
 func getIDFromPath(p string) (int, bool) {
-	//should end with after /number, don't care what comes before.
+	//path should end after /number, don't care what comes before.
 	numberPatt := regexp.MustCompile(`/([0-9]+)$`)
 
-	//edit URI should be /users/id, so this should find the whole string and the ID if valid.
+	//valid edit URI is /users/id, so this should match the whole URI plus the ID capturing group if valid.
 	id := numberPatt.FindStringSubmatch(p)
 	if id == nil || len(id) != 2 {
 		return math.MinInt32, false
