@@ -11,6 +11,11 @@ import (
 	"github.com/nmalensek/go-user-form/model"
 )
 
+//FileModel constants.
+const (
+	databaseUnavailable = "The database is currently unavailable, please try again later."
+)
+
 //FileUserModel is an implementation of UserDataStore using the filesystem as a pseudo-database.
 type FileUserModel struct {
 	Filepath string
@@ -18,21 +23,45 @@ type FileUserModel struct {
 
 //GetAll retrieves all saved users.
 func (m *FileUserModel) GetAll() ([]model.User, error) {
-	currUsers, err := readUserFile(m.Filepath)
+	fileData, err := readUserFile(m.Filepath)
 	if err != nil {
 		return nil, err
 	}
-	//copying prevents the whole file from staying in memory,
-	//which is unnecessary right now because it's returning all users
-	//anyway instead of a subset. Done here to get in the habit of doing this.
-	u := make([]model.User, len(currUsers))
-	copy(u, currUsers)
-	return u, nil
+
+	currUsers, _, err := JSONToUsers(fileData)
+	if err != nil {
+		return nil, err
+	}
+
+	return currUsers, nil
 }
 
 //Create creates a new user and saves it to the "database" file.
 func (m *FileUserModel) Create(u *model.User) error {
-	return errors.New("create: not implemented yet")
+	fileData, err := readUserFile(m.Filepath)
+	if err != nil {
+		return err
+	}
+
+	_, users, err := JSONToUsers(fileData)
+	if err != nil {
+		return err
+	}
+
+	u.ID = GetNextID(users)
+
+	users[u.ID] = *u
+	userBytes, err := json.Marshal(users)
+	if err != nil {
+		return err
+	}
+
+	err = saveBytesToFile(m.Filepath, userBytes)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
 
 //Edit modifies the properties of the given user based on UI input.
@@ -45,19 +74,28 @@ func (m *FileUserModel) Delete(id int) error {
 	return errors.New("delete: not implemented yet")
 }
 
-func readUserFile(path string) ([]model.User, error) {
+func readUserFile(path string) ([]byte, error) {
 	content, err := ioutil.ReadFile(path)
 	if err != nil {
 		log.Fatal(err)
-		return nil, err
+		return nil, errors.New(databaseUnavailable)
 	}
 
-	users, _, err := JSONToUsers(content)
+	//copying prevents the whole file from staying in memory,
+	//which is unnecessary right now because it's returning all users
+	//anyway instead of a subset. Done here to get in the habit of doing this.
+	cop := make([]byte, len(content))
+	copy(cop, content)
+	return cop, nil
+}
+
+func saveBytesToFile(path string, b []byte) error {
+	err := ioutil.WriteFile(path, b, 0644)
 	if err != nil {
-		return nil, err
+		log.Fatal(err)
+		return errors.New(databaseUnavailable)
 	}
-
-	return users, nil
+	return nil
 }
 
 //JSONToUsers takes a JSON string of users, puts them in a map
@@ -75,8 +113,8 @@ func JSONToUsers(sourceBytes []byte) ([]model.User, map[int]model.User, error) {
 		i++
 	}
 
-	sort.Slice(userSlice, func(i, j int) bool {
-		return userSlice[i].ID < userSlice[j].ID
+	sort.Slice(userSlice, func(j, k int) bool {
+		return userSlice[j].ID < userSlice[k].ID
 	})
 
 	return userSlice, userMap, nil
