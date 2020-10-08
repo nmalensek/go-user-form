@@ -7,8 +7,9 @@ import (
 
 //Model error message constants.
 const (
-	CouldNotFind = "Could not find specified user in database."
-	CreateError  = "Could not create user, unable to assign valid ID."
+	CouldNotFind          = "Could not find specified user in database."
+	CreateErrorBadID      = "Could not create user, unable to assign valid ID."
+	CreateErrorIncomplete = "Could not create user from the information provided."
 )
 
 //UserDataStore defines the User type data operations.

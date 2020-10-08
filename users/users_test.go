@@ -51,7 +51,7 @@ func (mu *mockUsers) Create(u *model.User) error {
 	var newID = fileusermodel.GetNextID(userMap)
 
 	if newID <= 0 {
-		return errors.New(model.CreateError)
+		return errors.New(model.CreateErrorBadID)
 	}
 
 	u.ID = newID

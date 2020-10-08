@@ -123,16 +123,39 @@ func TestDelete(t *testing.T) {
 	}
 }
 
-func MissingDelete(t *testing.T) {
+func TestMissingDelete(t *testing.T) {
+	mockModel := FileUserModel{Filepath: testFilePath}
+	err := mockModel.Delete(math.MaxInt64)
 
+	if err == nil {
+		t.Errorf("expected error, got none.")
+		return
+	}
+
+	if err.Error() != model.CouldNotFind {
+		t.Errorf("error mismatch; got %v want %v", err.Error(), model.CouldNotFind)
+	}
 }
 
-func MissingEdit(t *testing.T) {
-
+func TestMissingEdit(t *testing.T) {
+	//covered by MissingDelete
 }
 
-func IncompleteCreate(t *testing.T) {
+func TestIncompleteCreate(t *testing.T) {
+	mockModel := FileUserModel{Filepath: testFilePath}
 
+	incompleteUser := model.User{FirstName: "test"}
+
+	err := mockModel.Create(&incompleteUser)
+
+	if err == nil {
+		t.Errorf("expected error, got none.")
+		return
+	}
+
+	if err.Error() != model.CreateErrorIncomplete {
+		t.Errorf("error mismatch; got %v want %v", err.Error(), model.CouldNotFind)
+	}
 }
 
 func getUserWithID(ID int, uList []model.User) model.User {
