@@ -84,18 +84,21 @@ func TestEdit(t *testing.T) {
 
 	currUsers, _ := mockModel.GetAll()
 
-	editUser := currUsers[0]
-	editUser.Email = "xyz@123"
-	editUser.LastName = "zzzzz"
+	editData := model.User{Email: "xyz@123", LastName: "zzzzz", Organization: "..."}
+	originalUser := currUsers[0]
 
-	mockModel.Edit(editUser, editUser.ID)
+	originalUser.Email = "xyz@123"
+	originalUser.LastName = "zzzzz"
+	originalUser.Organization = "..."
+
+	mockModel.Edit(editData, originalUser.ID)
 
 	currUsers, _ = mockModel.GetAll()
 
-	storedEdits := getUserWithID(editUser.ID, currUsers)
+	storedEdits := getUserWithID(originalUser.ID, currUsers)
 
-	if editUser != storedEdits {
-		t.Errorf("edits failed, got %v want %v", storedEdits, editUser)
+	if originalUser != storedEdits {
+		t.Errorf("edit failed, got %v want %v", storedEdits, originalUser)
 	}
 }
 

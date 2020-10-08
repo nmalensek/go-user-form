@@ -75,7 +75,21 @@ func (m *FileUserModel) Edit(u model.User, id int) error {
 		return errors.New(model.CouldNotFind)
 	}
 
-	userMap[id] = u
+	savedUser := userMap[id]
+	if u.FirstName != "" {
+		savedUser.FirstName = u.FirstName
+	}
+	if u.LastName != "" {
+		savedUser.LastName = u.LastName
+	}
+	if u.Email != "" {
+		savedUser.Email = u.Email
+	}
+	if u.Organization != "" {
+		savedUser.Organization = u.Organization
+	}
+
+	userMap[id] = savedUser
 
 	err = saveMapToFile(m.Filepath, userMap)
 	if err != nil {
