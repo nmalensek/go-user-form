@@ -4,6 +4,8 @@ import (
 	"errors"
 	"math"
 
+	"github.com/nmalensek/go-user-form/validation"
+
 	"github.com/nmalensek/go-user-form/model"
 )
 
@@ -34,6 +36,11 @@ func (m *FileUserModel) GetAll() ([]model.User, error) {
 
 //Create creates a new user and saves it to the "database" file.
 func (m *FileUserModel) Create(u *model.User) error {
+	errs := validation.ValidateInput(*u)
+	if len(errs) > 0 {
+		return errors.New(model.CreateErrorIncomplete)
+	}
+
 	userMap, err := readFileToMap(m.Filepath)
 	if err != nil {
 		return err
@@ -53,7 +60,29 @@ func (m *FileUserModel) Create(u *model.User) error {
 
 //Edit modifies the properties of the given user based on UI input.
 func (m *FileUserModel) Edit(u model.User, id int) error {
-	return errors.New("edit: not implemented yet")
+	errs := validation.ValidateInput(u)
+	if len(errs) > 0 {
+		return errors.New(model.EditErrorIncomplete)
+	}
+
+	userMap, err := readFileToMap(m.Filepath)
+	if err != nil {
+		return err
+	}
+
+	_, ok := userMap[id]
+	if !ok {
+		return errors.New(model.CouldNotFind)
+	}
+
+	userMap[id] = u
+
+	err = saveMapToFile(m.Filepath, userMap)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
 
 //Delete finds the specified user by ID and deletes them.
