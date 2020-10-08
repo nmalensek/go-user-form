@@ -68,7 +68,7 @@ func processGet(r *http.Request, db model.UserDataStore) ([]byte, error) {
 //processPost runs validation methods, then returns nil
 //if the post was successful or an error if one occurred.
 func processPost(r *http.Request, db model.UserDataStore) error {
-	user, errs := validateBodyToUser(r)
+	user, errs := validateBodyToUser(r, true)
 	if errs != nil {
 		return errs
 	}
@@ -83,7 +83,7 @@ func processPost(r *http.Request, db model.UserDataStore) error {
 //processPut runs validation methods, then returns nil
 //if the put was successful or an error if one occurred.
 func processPut(r *http.Request, db model.UserDataStore) error {
-	u, valErrs := validateBodyToUser(r)
+	u, valErrs := validateBodyToUser(r, false)
 	if valErrs != nil {
 		return valErrs
 	}
@@ -119,13 +119,18 @@ func processDelete(r *http.Request, db model.UserDataStore) error {
 
 //validateBodyToUser validates the request body to make sure a complete User object was submitted.
 //If valid, returns a pointer to a new model.User struct from the submitted object.
-func validateBodyToUser(r *http.Request) (*model.User, error) {
+func validateBodyToUser(r *http.Request, isComplete bool) (*model.User, error) {
 	newUser := model.User{}
 	json.NewDecoder(r.Body).Decode(&newUser)
 
-	inputErrors := validation.ValidateInput(newUser)
+	var inputErrors []validation.UserError
+	if isComplete {
+		inputErrors = validation.ValidateCompleteInput(newUser)
+	} else {
+		inputErrors = validation.ValidatePartialInput(newUser)
+	}
 
-	if len(inputErrors) > 0 {
+	if inputErrors != nil {
 		return nil, validation.UserErrors{Message: InvalidInput, ErrorList: inputErrors}
 	}
 

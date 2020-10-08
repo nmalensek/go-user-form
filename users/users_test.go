@@ -330,7 +330,7 @@ func TestPutInvalidUser(t *testing.T) {
 	mockEnv := makeMockEnv()
 
 	req, err := http.NewRequest(http.MethodPut, "/users/1",
-		strings.NewReader(`{"firstName":"editTestUser", "email":"test@t.net","organization":"sales"}`))
+		strings.NewReader(`{"firstName":"", "email":"","organization":""}`))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -348,7 +348,7 @@ func TestPutInvalidUser(t *testing.T) {
 		t.Errorf("Expected one error, got %v errors.", len(errs.ErrorList))
 	}
 
-	compareGotWant(errs.ErrorList[0].Message, validation.RequiredMessage("Last Name"), t)
+	compareGotWant(errs.ErrorList[0].Message, validation.MissingAllProps, t)
 }
 
 func TestDeleteValid(t *testing.T) {

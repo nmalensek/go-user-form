@@ -11,15 +11,14 @@ import (
 //https://html.spec.whatwg.org/multipage/input.html#valid-e-mail-address
 var EmailPattern = regexp.MustCompile(`^[a-zA-Z0-9.!#$%&'*+/=?^_{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*$`)
 
-//ValidateInput compares a given user's properties against requirements and returns
+//MissingAllProps is an error that occurs if no properties are submitted to a PUT request.
+const MissingAllProps = "At least one property must be filled out to complete an edit."
+
+//ValidateCompleteInput compares a given user's properties against requirements and returns
 //errors corresponding to the properties not meeting the requirements.
-func ValidateInput(subj model.User) []UserError {
+func ValidateCompleteInput(subj model.User) []UserError {
 	errs := make([]UserError, 0)
-	stringProps := []ValItem{
-		ValItem{name: "FirstName", friendlyName: "First Name", val: subj.FirstName},
-		ValItem{name: "LastName", friendlyName: "Last Name", val: subj.LastName},
-		ValItem{name: "Email", val: subj.Email},
-		ValItem{name: "Organization", val: subj.Organization}}
+	stringProps := getRequiredProps(&subj)
 
 	appendErrorIfReq(&errs, stringProps)
 
@@ -28,7 +27,30 @@ func ValidateInput(subj model.User) []UserError {
 			ValItem{name: "Email", val: subj.Email, pattern: EmailPattern}})
 	}
 
-	return errs
+	if len(errs) > 0 {
+		return errs
+	}
+
+	return nil
+}
+
+//ValidatePartialInput checks the user object's property values. If at least one is filled out,
+//then the input is ok. If the email property is included, it is additionally checked for formatting.
+func ValidatePartialInput(subj model.User) []UserError {
+	errs := make([]UserError, 0)
+	reqProps := getRequiredProps(&subj)
+
+	ok := userHasValue(&errs, reqProps)
+	if !ok {
+		return errs
+	}
+
+	if len(subj.Email) > 0 {
+		appendErrorIfNoMatch(&errs, []ValItem{
+			ValItem{name: "Email", val: subj.Email, pattern: EmailPattern}})
+	}
+
+	return nil
 }
 
 //ValItem is a property name and its value.
@@ -47,8 +69,8 @@ func (v *ValItem) getFriendlyName() string {
 }
 
 //appendErrorIfReq appends an error if an item is missing and is required.
-func appendErrorIfReq(e *[]UserError, item []ValItem) {
-	for _, p := range item {
+func appendErrorIfReq(e *[]UserError, items []ValItem) {
+	for _, p := range items {
 		if p.val == "" {
 			uErr := UserError{PropName: p.name, PropValue: p.val, Message: RequiredMessage(p.getFriendlyName())}
 			*e = append(*e, uErr)
@@ -57,13 +79,32 @@ func appendErrorIfReq(e *[]UserError, item []ValItem) {
 }
 
 //appendErrorIfNoMatch appends an error if an item does not match the specified regex.
-func appendErrorIfNoMatch(e *[]UserError, item []ValItem) {
-	for _, p := range item {
+func appendErrorIfNoMatch(e *[]UserError, items []ValItem) {
+	for _, p := range items {
 		if !p.pattern.MatchString(p.val) {
 			newErr := UserError{PropName: p.name, PropValue: p.val, Message: IncorrectFormatMessage(p.getFriendlyName())}
 			*e = append(*e, newErr)
 		}
 	}
+}
+
+func userHasValue(e *[]UserError, items []ValItem) bool {
+	for _, p := range items {
+		if p.val != "" {
+			return true
+		}
+	}
+	newErr := UserError{PropName: "", PropValue: "", Message: MissingAllProps}
+	*e = append(*e, newErr)
+	return false
+}
+
+func getRequiredProps(u *model.User) []ValItem {
+	return []ValItem{
+		ValItem{name: "FirstName", friendlyName: "First Name", val: u.FirstName},
+		ValItem{name: "LastName", friendlyName: "Last Name", val: u.LastName},
+		ValItem{name: "Email", val: u.Email},
+		ValItem{name: "Organization", val: u.Organization}}
 }
 
 //IncorrectFormatMessage returns the standard error message for a property that's formatted incorrectly.

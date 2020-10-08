@@ -30,7 +30,7 @@ func TestValidateInput(t *testing.T) {
 	goodUser := model.User{FirstName: "test1", LastName: "Last",
 		Email: "test@email.com", Organization: "Sales"}
 
-	errors := ValidateInput(goodUser)
+	errors := ValidateCompleteInput(goodUser)
 
 	if len(errors) != 0 {
 		for _, e := range errors {
@@ -42,7 +42,7 @@ func TestValidateInput(t *testing.T) {
 func TestBadEmail(t *testing.T) {
 	badEmail := model.User{Email: "aaaaa"}
 
-	errors := ValidateInput(badEmail)
+	errors := ValidateCompleteInput(badEmail)
 
 	if len(errors) == 0 {
 		t.Errorf("Input bad email address %v but was not caught", badEmail.Email)
@@ -64,7 +64,7 @@ func TestBadEmail(t *testing.T) {
 func TestIncompleteEntry(t *testing.T) {
 	missingInfo := model.User{FirstName: "test"}
 
-	errors := ValidateInput(missingInfo)
+	errors := ValidateCompleteInput(missingInfo)
 
 	if len(errors) < 3 {
 		t.Errorf("Information missing from input was not caught.")

@@ -36,7 +36,7 @@ func (m *FileUserModel) GetAll() ([]model.User, error) {
 
 //Create creates a new user and saves it to the "database" file.
 func (m *FileUserModel) Create(u *model.User) error {
-	errs := validation.ValidateInput(*u)
+	errs := validation.ValidateCompleteInput(*u)
 	if len(errs) > 0 {
 		return errors.New(model.CreateErrorIncomplete)
 	}
@@ -60,7 +60,7 @@ func (m *FileUserModel) Create(u *model.User) error {
 
 //Edit modifies the properties of the given user based on UI input.
 func (m *FileUserModel) Edit(u model.User, id int) error {
-	errs := validation.ValidateInput(u)
+	errs := validation.ValidatePartialInput(u)
 	if len(errs) > 0 {
 		return errors.New(model.EditErrorIncomplete)
 	}
