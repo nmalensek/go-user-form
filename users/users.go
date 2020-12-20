@@ -52,6 +52,7 @@ func ProcessRequestByType(w http.ResponseWriter, r *http.Request, e *config.Env)
 }
 
 //processGet returns bytes from JSON records from the database or an error if one occurs.
+//TODO: because no processing's done here, this method should use io.Copy or http.ServeContent to pass database content directly to the client.
 func processGet(r *http.Request, db model.UserDataStore) ([]byte, error) {
 	userList, err := db.GetAll()
 	if err != nil {
