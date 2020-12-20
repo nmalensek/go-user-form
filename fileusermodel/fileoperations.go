@@ -39,14 +39,30 @@ func saveMapToFile(path string, u map[int]model.User) error {
 }
 
 func readFileToMap(path string) (map[int]model.User, error) {
-	fileData, err := readUserFile(path)
-	if err != nil {
-		return nil, err
-	}
-
-	_, users, err := JSONToUsers(fileData)
+	_, users, err := fileToUsers(path)
 	if err != nil {
 		return nil, err
 	}
 	return users, nil
+}
+
+func readFileToSlice(path string) ([]model.User, error) {
+	users, _, err := fileToUsers(path)
+	if err != nil {
+		return nil, err
+	}
+	return users, nil
+}
+
+func fileToUsers(path string) ([]model.User, map[int]model.User, error) {
+	fileData, err := readUserFile(path)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	uList, uMap, err := JSONToUsers(fileData)
+	if err != nil {
+		return nil, nil, err
+	}
+	return uList, uMap, nil
 }

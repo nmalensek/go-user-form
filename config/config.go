@@ -60,8 +60,7 @@ func initLogger() (*log.Logger, error) {
 	return log.New(file, "ERROR: ", log.Ldate|log.Ltime|log.LUTC|log.Lshortfile), nil
 }
 
-//registerFileDb determines the filepath permissions given in the userFilePath argument, and if
-//the file has the correct permissions the path is stored for future "database" uses.
+//registerFileDb determines the filepath permissions given in the userFilePath argument, and if the file has the correct permissions the path is stored for future "database" uses.
 func registerFileDb() (model.UserDataStore, error) {
 	if userFilePath == nil || *userFilePath == "" {
 		return nil, errors.New("registerFileDb: using a file as a database but no file path was provided")

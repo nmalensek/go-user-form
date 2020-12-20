@@ -21,17 +21,11 @@ type FileUserModel struct {
 
 //GetAll retrieves all saved users.
 func (m *FileUserModel) GetAll() ([]model.User, error) {
-	fileData, err := readUserFile(m.Filepath)
+	users, err := readFileToSlice(m.Filepath)
 	if err != nil {
 		return nil, err
 	}
-
-	currUsers, _, err := JSONToUsers(fileData)
-	if err != nil {
-		return nil, err
-	}
-
-	return currUsers, nil
+	return users, nil
 }
 
 //Create creates a new user and saves it to the "database" file.
