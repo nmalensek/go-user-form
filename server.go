@@ -15,6 +15,9 @@ func userHandler(w http.ResponseWriter, r *http.Request, e *config.Env) {
 
 func main() {
 	flag.Parse()
+	if flag.NFlag() == 0 {
+		log.Fatal("No flags were given on startup, database type must be specified (use -h for help).")
+	}
 	env, err := config.Start()
 	if err != nil {
 		log.Fatal(err)

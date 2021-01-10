@@ -7,15 +7,42 @@ import (
 	"log"
 	"os"
 	"regexp"
+	"strings"
 
 	"github.com/nmalensek/go-user-form/fileusermodel"
 	"github.com/nmalensek/go-user-form/model"
 )
 
-var userFilePath = flag.String("ufile", "", "The absolute path for the file to use as a pseudo-database")
-var dbType = flag.String("db", "", "The type of database to use. If db=file, the ufile parameter must also be specified")
+const (
+	connFlag = "conn"
+	fileDb   = "file"
+)
+
+var connString = flag.String(connFlag, "", "The database connection string (absolute file path if using a file as a database).")
+var dbType = flag.String("db", "", fmt.Sprintf("The type of database to use, options follow:\n %v", printDatabaseTypes()))
 
 var validPath = regexp.MustCompile("^/(users)/([a-zA-Z0-9]*)$")
+
+type flagOption struct {
+	Name        string
+	Description string
+}
+
+func (f *flagOption) String() string {
+	return fmt.Sprintf("%v:\t%v", f.Name, f.Description)
+}
+
+var databaseTypes = []flagOption{
+	{Name: fileDb, Description: fmt.Sprintf("Use a JSON file as a pseudo-database (provide the absolute filepath as the \"%v\" flag).", connFlag)},
+}
+
+func printDatabaseTypes() string {
+	b := strings.Builder{}
+	for _, v := range databaseTypes {
+		fmt.Fprint(&b, v.String())
+	}
+	return b.String()
+}
 
 //Env contains all environment variables that the app needs to run (database info, loggers, etc.)
 type Env struct {
@@ -43,7 +70,7 @@ func Start() (*Env, error) {
 //initDb constructs the database connection depending on the type specified in the command line.
 func initDb() (model.UserDataStore, error) {
 	switch *dbType {
-	case "file":
+	case fileDb:
 		return registerFileDb()
 	case "":
 		return nil, errors.New("initDb: database type not specified")
@@ -62,9 +89,9 @@ func initLogger() (*log.Logger, error) {
 
 //registerFileDb determines the filepath permissions given in the userFilePath argument, and if the file has the correct permissions the path is stored for future "database" uses.
 func registerFileDb() (model.UserDataStore, error) {
-	if userFilePath == nil || *userFilePath == "" {
-		return nil, errors.New("registerFileDb: using a file as a database but no file path was provided")
+	if connString == nil || *connString == "" {
+		return nil, fmt.Errorf("registerFileDb: using a file as a database but no file path was provided through the %v flag", connFlag)
 	}
 	//TODO: ensure read/write permissions on file. should this be logged?
-	return &fileusermodel.FileUserModel{Filepath: *userFilePath}, nil
+	return &fileusermodel.FileUserModel{Filepath: *connString}, nil
 }
