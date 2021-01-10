@@ -1,1 +1,1 @@
-The user-form project with the server layer re-written in Go. This project is to get basic experience writing Go before moving on to larger projects.
+The server layer of the user-form repository re-written in Go. This project is to get basic experience writing Go before moving on to larger projects. The React project under user-form/client is currently the only front-end implementation for this server.
