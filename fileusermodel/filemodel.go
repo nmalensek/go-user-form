@@ -2,7 +2,6 @@ package fileusermodel
 
 import (
 	"errors"
-	"math"
 
 	"github.com/nmalensek/go-user-form/validation"
 
@@ -117,7 +116,7 @@ func (m *FileUserModel) Delete(id int) error {
 
 //GetNextID returns the next ID value to be assigned (current max ID + 1).
 func GetNextID(userMap map[int]model.User) int {
-	maxID := math.MinInt32
+	maxID := 0
 	for _, val := range userMap {
 		if val.ID > maxID {
 			maxID = val.ID

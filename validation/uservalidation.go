@@ -24,7 +24,7 @@ func ValidateCompleteInput(subj model.User) []UserError {
 
 	if len(subj.Email) > 0 {
 		appendErrorIfNoMatch(&errs, []ValItem{
-			ValItem{name: "Email", val: subj.Email, pattern: EmailPattern}})
+			{name: "Email", val: subj.Email, pattern: EmailPattern}})
 	}
 
 	if len(errs) > 0 {
@@ -47,7 +47,7 @@ func ValidatePartialInput(subj model.User) []UserError {
 
 	if len(subj.Email) > 0 {
 		appendErrorIfNoMatch(&errs, []ValItem{
-			ValItem{name: "Email", val: subj.Email, pattern: EmailPattern}})
+			{name: "Email", val: subj.Email, pattern: EmailPattern}})
 	}
 
 	return nil
@@ -101,10 +101,10 @@ func userHasValue(e *[]UserError, items []ValItem) bool {
 
 func getRequiredProps(u *model.User) []ValItem {
 	return []ValItem{
-		ValItem{name: "FirstName", friendlyName: "First Name", val: u.FirstName},
-		ValItem{name: "LastName", friendlyName: "Last Name", val: u.LastName},
-		ValItem{name: "Email", val: u.Email},
-		ValItem{name: "Organization", val: u.Organization}}
+		{name: "FirstName", friendlyName: "First Name", val: u.FirstName},
+		{name: "LastName", friendlyName: "Last Name", val: u.LastName},
+		{name: "Email", val: u.Email},
+		{name: "Organization", val: u.Organization}}
 }
 
 //IncorrectFormatMessage returns the standard error message for a property that's formatted incorrectly.
