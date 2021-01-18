@@ -20,11 +20,12 @@ func ValidateCompleteInput(subj model.User) []UserError {
 	errs := make([]UserError, 0)
 	stringProps := getRequiredProps(&subj)
 
-	appendErrorIfReq(&errs, stringProps)
+	errs = append(errs, checkIfRequired(stringProps)...)
 
 	if len(subj.Email) > 0 {
-		appendErrorIfNoMatch(&errs, []ValItem{
-			{name: "Email", val: subj.Email, pattern: EmailPattern}})
+		errs = append(errs, appendErrorIfNoMatch([]ValItem{
+			{name: "Email", val: subj.Email, pattern: EmailPattern},
+		})...)
 	}
 
 	if len(errs) > 0 {
@@ -40,13 +41,14 @@ func ValidatePartialInput(subj model.User) []UserError {
 	errs := make([]UserError, 0)
 	reqProps := getRequiredProps(&subj)
 
-	ok := userHasValue(&errs, reqProps)
+	ok := userHasValue(reqProps)
 	if !ok {
+		errs = append(errs, UserError{PropName: "", PropValue: "", Message: MissingAllProps})
 		return errs
 	}
 
 	if len(subj.Email) > 0 {
-		appendErrorIfNoMatch(&errs, []ValItem{
+		appendErrorIfNoMatch([]ValItem{
 			{name: "Email", val: subj.Email, pattern: EmailPattern}})
 	}
 
@@ -68,34 +70,36 @@ func (v *ValItem) getFriendlyName() string {
 	return v.friendlyName
 }
 
-//appendErrorIfReq appends an error if an item is missing and is required.
-func appendErrorIfReq(e *[]UserError, items []ValItem) {
+//checkIfRequired appends an error if an item is missing and is required.
+func checkIfRequired(items []ValItem) []UserError {
+	e := make([]UserError, 0)
 	for _, p := range items {
 		if p.val == "" {
 			uErr := UserError{PropName: p.name, PropValue: p.val, Message: RequiredMessage(p.getFriendlyName())}
-			*e = append(*e, uErr)
+			e = append(e, uErr)
 		}
 	}
+	return e
 }
 
 //appendErrorIfNoMatch appends an error if an item does not match the specified regex.
-func appendErrorIfNoMatch(e *[]UserError, items []ValItem) {
+func appendErrorIfNoMatch(items []ValItem) []UserError {
+	e := make([]UserError, 0)
 	for _, p := range items {
 		if !p.pattern.MatchString(p.val) {
 			newErr := UserError{PropName: p.name, PropValue: p.val, Message: IncorrectFormatMessage(p.getFriendlyName())}
-			*e = append(*e, newErr)
+			e = append(e, newErr)
 		}
 	}
+	return e
 }
 
-func userHasValue(e *[]UserError, items []ValItem) bool {
+func userHasValue(items []ValItem) bool {
 	for _, p := range items {
 		if p.val != "" {
 			return true
 		}
 	}
-	newErr := UserError{PropName: "", PropValue: "", Message: MissingAllProps}
-	*e = append(*e, newErr)
 	return false
 }
 
